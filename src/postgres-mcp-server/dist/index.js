@@ -1,29 +1,54 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { z } from 'zod';
-import knex from 'knex';
-import pkg from './package.json' with { type: 'json' };
-const server = new McpServer({ name: pkg.name, version: pkg.version });
-const db = knex({
-    client: 'pg',
-    connection: process.env.POSTGRES_URL || 'postgresql://localhost:5432/psql?user=psql&password=psql'
-});
-const content_str = (r) => ({ content: [{ type: 'text', text: String(r) }] });
-server.registerTool('sql-select', {
-    title: 'SQL Select',
-    description: 'Select data from a PostgreSQL database',
-    inputSchema: { query: z.string() }
-}, async ({ query }) => {
-    const firstToken = query.toString().toLowerCase().trim().split(/\s+/).at(0) || '';
-    if (firstToken.startsWith('select')) {
-        return new Promise((res) => {
-            db.raw(query).then((result) => {
-                res(content_str(JSON.stringify(result?.rows ?? result)));
-            }).catch((err) => {
-                res(content_str(String(err?.message ?? err)));
-            });
-        });
+import express from "express";
+import { randomUUID } from "node:crypto";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
+import server_creator from "./server.js";
+const app = express();
+app.use(express.json());
+const transports = {};
+app.post('/mcp', async (req, res) => {
+    const sessionId = req.headers['mcp-session-id'];
+    let transport;
+    if (sessionId && transports[sessionId]) {
+        transport = transports[sessionId];
     }
-    return new Promise((_, rej) => rej(new Error('Must be a SQL Select')));
+    else if (!sessionId && isInitializeRequest(req.body)) {
+        transport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: () => randomUUID(),
+            onsessioninitialized: (sessionId) => {
+                transports[sessionId] = transport;
+            },
+        });
+        transport.onclose = () => {
+            if (transport.sessionId) {
+                delete transports[transport.sessionId];
+            }
+        };
+        const server = server_creator();
+        await server.connect(transport);
+    }
+    else {
+        res.status(400).json({
+            jsonrpc: '2.0',
+            error: {
+                code: -32000,
+                message: 'Bad Request: No valid session ID provided',
+            },
+            id: null,
+        });
+        return;
+    }
+    await transport.handleRequest(req, res, req.body);
 });
-await server.connect(new StreamableHTTPServerTransport({ sessionIdGenerator: undefined }));
+const handleSessionRequest = async (req, res) => {
+    const sessionId = req.headers['mcp-session-id'];
+    if (!sessionId || !transports[sessionId]) {
+        res.status(400).send('Invalid or missing session ID');
+        return;
+    }
+    const transport = transports[sessionId];
+    await transport.handleRequest(req, res);
+};
+app.get('/mcp', handleSessionRequest);
+app.delete('/mcp', handleSessionRequest);
+app.listen(8080);
