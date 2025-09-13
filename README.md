@@ -51,7 +51,6 @@ docker compose up --build
 ### Use with an MCP client
 
 #### Configuration via .mcp.json
-
 Create a `.mcp.json` file in your project root or MCP client configuration directory to connect to this PostgreSQL MCP server:
 
 ```json
@@ -61,7 +60,7 @@ Create a `.mcp.json` file in your project root or MCP client configuration direc
       "command": "npx",
       "args": [
         "-y",
-        "@modelcontextprotocol/server-postgres"
+        "@tarsislimadev/postgresql-mcp-server"
       ],
       "env": {
         "POSTGRES_URL": "postgresql://psql:psql@localhost:5432/psql"
@@ -151,4 +150,4 @@ The server returns a text payload containing the result rows (or an error messag
 - `env/docker.up.sh` — convenience script to run docker-compose
 
 ### License
-MIT
+[MIT](./LICENSE)
