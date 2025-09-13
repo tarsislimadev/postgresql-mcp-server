@@ -1,28 +1,52 @@
 ## PostgreSQL MCP Server
 
-Run simple read‑only SQL queries against PostgreSQL through a Model Context Protocol (MCP) server.
-
-### What you get
-- **MCP over HTTP (port 8080)**
-- **One tool: `sql-select`** — executes `SELECT` queries
-- **PostgreSQL connection via `POSTGRES_URL`**
+A simple PostgreSQL MCP server
 
 ### Quick start (Docker)
-```bash
-docker compose up --build
-```
-The server starts at `http://localhost:8080`.
 
-Set your database URL by exporting it before starting, or by editing your compose file:
+**Start PostgreSQL database:**
 ```bash
-export POSTGRES_URL="postgresql://user:password@host:5432/dbname"
-docker compose up --build
+docker run --rm -d \
+  --network host \
+  --name postgresql-1 \
+  -e POSTGRES_DB=psql \
+  -e POSTGRES_USER=psql \
+  -e POSTGRES_PASSWORD=psql \
+  postgres:alpine
 ```
+
+This runs a PostgreSQL container with default credentials:
+- Database: `psql`
+- User: `psql` 
+- Password: `psql`
+- Port: `5432` (host network)
 
 ### Use with an MCP client
-- Connect your MCP‑compatible client to `http://localhost:8080`.
-- Call the `sql-select` tool with an input object:
-  - `query`: a SQL string (intended for `SELECT`).
+
+#### Configuration via .mcp.json
+Create a `.mcp.json` file in your project root or MCP client configuration directory to connect to this PostgreSQL MCP server:
+
+```json
+{
+  "mcpServers": {
+    "postgresql": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@tarsislimadev/postgresql-mcp-server"
+      ],
+      "env": {
+        "POSTGRES_URL": "postgresql://psql:psql@localhost:5432/psql"
+      }
+    }
+  }
+}
+```
+
+#### Using the server
+
+Once configured, you can call the `sql-select` tool with an input object:
+- `query`: a SQL string (intended for `SELECT`).
 
 Example input:
 ```json
@@ -30,14 +54,6 @@ Example input:
 ```
 The server returns a text payload containing the result rows (or an error message).
 
-### Notes
-- Designed for read‑only queries. It performs a basic check and may not catch every non‑SELECT case.
-- Output is text. Some clients may need to parse JSON rows from the text.
-
-### Folder layout
-- `src/postgres-mcp-server/index.mjs` — MCP server and tool
-- `src/postgres-mcp-server/Dockerfile` — container image
-- `docker-compose.yml` — local run setup
-
 ### License
-MIT
+
+[MIT](./LICENSE)
