@@ -1,6 +1,6 @@
 {
   "name": "@tarsislimadev/postgresql-mcp-server",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "PostgreSQL MCP Server",
   "main": "dist/index.js",
   "bin": "dist/index.js",
