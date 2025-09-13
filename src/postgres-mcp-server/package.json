@@ -1,16 +1,25 @@
 {
-  "name": "postgresql-mcp-server",
+  "name": "@tarsislimadev/postgresql-mcp-server",
   "version": "0.1.0",
   "description": "PostgreSQL MCP Server",
-  "main": "index.mjs",
+  "main": "dist/index.js",
+  "bin": "dist/index.js",
   "scripts": {
-    "start": "node index.js"
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js"
   },
   "license": "MIT",
   "type": "module",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.5",
+    "express": "^5.1.0",
+    "knex": "^3.1.0",
     "pg": "^8.16.3",
+    "typescript": "^5.9.2",
     "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^20.19.13"
   }
 }
