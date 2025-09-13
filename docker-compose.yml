@@ -1,8 +1,0 @@
-services:
-  app:
-    image: 'tmvdl/postgresql-mcp-server'
-    build: './src/postgres-mcp-server/'
-    ports:
-      - '8080:8080'
-    volumes:
-      - './src/postgres-mcp-server/:/app'
